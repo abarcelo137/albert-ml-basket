@@ -175,3 +175,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# Dossiers à ignorer
+logs/
+tests/
+models/
+results/
+
+
