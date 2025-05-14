@@ -27,11 +27,16 @@ Ce programme permet aux passionnés de basket, analystes sportifs et simples cur
 - Modèles utilisés : **Random Forest** et **Gradient Boosting**.
 - Recherche exhaustive de la meilleure combinaison selon des métriques avancées.
 
-### 2. Simulateur de Match
+### 2. Simulateur de match
 - Comparaison entre deux lineups :
   - **Équipes réelles** (5 meilleurs joueurs d’une équipe NBA sur une saison donnée).
   - **Aléatoires** (sélection individuelle de joueurs).
 - Bonus de cohérence attribué selon la complémentarité des positions.
+  
+### 3. Dashboard interactif
+- **Visualisation des matchs simulés** (résultats, comparaisons de lineups, prédictions).
+- Accès interactif aux **statistiques avancées des joueurs** et des équipes sélectionnées.
+- Exploration intuitive des **informations complémentaires** issues des simulations et analyses.
 
 ---
 
@@ -87,7 +92,7 @@ Les données couvrent toutes les saisons NBA depuis l'an 2000.
 ## Résultats & Visualisations
 - 🥇 **Top Dream Teams** par saison.
 - Graphiques comparatifs des performances (RMSE, R²).
-- Analyse spécifique de la saison **2012** (lock-out NBA).
+- Dashboard pour visualiser les matchs simulés et toutes les informations complémentaires
 
 ---
 
