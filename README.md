@@ -22,70 +22,89 @@ Le projet repose sur un ensemble de fichiers issus de l’API de la NBA, de Kagg
 
 Ces données couvrent plusieurs saisons NBA, permettent de relier les performances individuelles à des résultats collectifs, et sont utilisées pour analyser l’impact de compositions d’équipes. Ces fichiers contiennent des **statistiques individuelles et collectives**, des **résultats de match**s, des **informations d’identité des joueurs et des équipes**, ainsi que des détails sur les compositions match par match.
 
-# PARTIE 1
+# NBA Dream Team Predictor
 
-L’objectif du projet est de *prédire automatiquement la meilleure composition de 5 joueurs NBA ("dream team") par saison*, c’est-à-dire la combinaison qui maximise les chances de victoire de l'équipe.
+## 🏀 Objectif
+Prédire automatiquement la meilleure composition de 5 joueurs NBA ("dream team") par saison - la combinaison qui maximise les chances de victoire de l'équipe.
 
-### Datasets
+## 📊 Datasets
+- **all_seasons.csv**: Statistiques par joueur et par saison (points, rebonds, passes, usage, efficacité, etc.)
+- **game.csv**: Résultats des matchs avec équipes et scores
+- **player.csv**: Identifiants et noms des joueurs
+- **common_player.csv**: Liens entre joueurs et équipes
+- **line_score.csv**: Scores par équipe pour chaque match
+- **team.csv**: Informations sur les équipes
 
-- **all_seasons.csv** : statistiques par joueur et par saison (points, rebonds, passes, usage, efficacité au tir, etc.)
-- **game.csv** : résultats des matchs avec les équipes concernées et les scores.
-- **player.csv** : identifiants et noms des joueurs.
-- **common_player.csv** : infos liens joueurs et teams
-- **line_score.csv** : scores par équipe pour chaque match, utile pour valider les résultats.
-- **team.csv** : infos sur les teams
+## 🔍 Feature Engineering
+Le modèle utilise plusieurs métriques calculées pour évaluer l'impact des joueurs:
 
-## 📊 Feature Engineering
+1. **Stats normalisées par match**
+   - `pts_per_game` = `pts` / `gp` (points par match)
+   - `reb_per_game` = `reb` / `gp` (rebonds par match)
+   - `ast_per_game` = `ast` / `gp` (passes par match)
 
-1. **Stats normalisées**  
-   - `pts_per_game`, `reb_per_game`, `ast_per_game`  
-   Moyennes par match pour neutraliser l’effet du nombre de rencontres jouées.
+2. **Ratios avancés**
+   - `ast_usg_ratio` = `ast_pct` / `usg_pct` (efficacité de création)
+   - `reb_pct_sum` = `oreb_pct` + `dreb_pct` (impact global au rebond)
+   - `net_rating` (différentiel offensif/défensif par 100 possessions)
 
-2. **Ratios avancés**  
-   - `ast_usg_ratio` = `ast_pct` / `usg_pct`  
-   - `reb_pct_sum`  = `oreb_pct` + `dreb_pct`  
-   Évaluent l’efficacité collective (création de jeu, impact au rebond).
+3. **Postes de jeu**
+   - Extraction du poste primaire: **G** (Guard), **F** (Forward), **C** (Center)
 
-3. **Net Rating**  
-   Bilan offensif – bilan défensif par 100 possessions, indicateur d’impact global.
+## 🤖 Modélisation
+Pour chaque saison, nous suivons un processus rigoureux:
 
-4. **Poste primaire**  
-   Extraction directe de la colonne `position` pour obtenir 3 classes :  
-   - **G** (Guard)  
-   - **F** (Forward)  
-   - **C** (Center)  
+1. **Entraînement**
+   - Données: toutes les saisons sauf celle évaluée
+   - Features: moyennes des statistiques des 5 meilleurs scoreurs par équipe
+   - Target: `win_rate` de l'équipe
+
+2. **Comparaison de modèles**
+   - **Random Forest Regressor**: modèle ensemble robuste aux outliers
+   - **Gradient Boosting Regressor**: modèle séquentiel généralement plus précis
+
+3. **Métriques d'évaluation**
+   - **RMSE** (Root Mean Square Error): mesure la précision des prédictions
+   - **R²**: pourcentage de variance expliquée par le modèle
+   
+4. **Fine-tuning des hyperparamètres** (tous les 5 ans)
+   - Optimisation par GridSearchCV avec validation croisée
+   - Paramètres optimisés: nombre d'arbres, profondeur, critères de division, etc.
+
+5. **Recherche de la Dream Team**
+   - Définition d'un pool de candidats: Top joueurs par position selon `net_rating`
+   - Évaluation de toutes les combinaisons valides (2G-2F-1C)
+   - Sélection de la composition avec le meilleur taux de victoire prédit
+
+## 📈 Résultats et Visualisations
+Le script génère plusieurs outputs:
+
+- **Fichiers CSV**:
+  - Métriques de performance par saison
+  - Dream Teams calculées par Random Forest
+  - Dream Teams calculées par Gradient Boosting
+
+- **Visualisations**:
+  - Comparaison des RMSE par saison
+  - Comparaison des scores R² par saison
+  - Analyse de l'anomalie observée pour 2012 (saison réduite par lock-out)
+
+Voici une version consolidée et prête à être collée dans ton `README.md`, intégrant proprement la partie avec les lineups d'équipes réelles :
 
 ---
 
-## 🔍 Sélection des features
+## PARTIE 2 — Comparaison de deux lineups
 
-1. On calcule la **corrélation** de chaque métrique avec le `win_rate`.  
-2. On **retient** les 5 variables les plus corrélées (absolu) pour entraîner le modèle.
+Le projet permet de **comparer deux lineups NBA** et de **prédire laquelle est la plus performante dans un match simulé**. Deux approches sont proposées :
 
----
+* **Lineups aléatoires** composés de 5 joueurs sélectionnés individuellement
+* **Lineups réels** issus d’équipes NBA existantes sur une saison donnée
 
-## 🤖 Pipeline de modélisation
+Ces deux variantes utilisent le même modèle de prédiction et les mêmes métriques, permettant de comparer à la fois la qualité intrinsèque des joueurs et la cohérence collective d'une équipe.
 
-Pour chaque saison **X** :
+### Structure du code
 
-1. **Entraînement**  
-   - On construit un jeu d’entraînement sur toutes les saisons ≠ X.  
-   - Chaque observation = une équipe + moyenne des 5 métriques pour ses 5 meilleurs scoreurs (by `pts`).  
-   - On apprend un **RandomForestRegressor** à prédire le `win_rate` d’une lineup.
-
-2. **Recherche de la Dream Team**  
-   - On définit un **pool réduit** de candidats par poste (top `net_rating`) pour limiter les combinaisons.  
-   - On génère **toutes les combinaisons** 2 Guards – 2 Forwards – 1 Center.  
-   - On agrège leurs 5 métriques et on utilise le modèle pour estimer leur `win_rate`.  
-   - On retient la composition dont la prédiction est la plus élevée.
-
-# PARTIE 2
-
-Le projet permettra aussi de *comparer deux lineups de joueurs* et de *prédire laquelle est la plus performante dans un match simulé*.
-
-## Structure du code
-
-Le système utilise la classe `LineupPredictor` qui permet de comparer deux lineups NBA aléatoires et de prédire laquelle gagnerait. Voici ses fonctionnalités principales:
+Le cœur du système repose sur la classe `LineupPredictor`, qui permet de comparer deux lineups (aléatoires ou réels) et de prédire un vainqueur :
 
 ```python
 class LineupPredictor:
@@ -96,123 +115,76 @@ class LineupPredictor:
     def _train_model()
     def get_lineup_coherence(lineup)
     def select_random_lineup()
+    def select_team_lineup(team_name, season)
     def calculate_lineup_score(lineup)
     def predict_winner(lineup1, lineup2)
 ```
 
-## Datasets
-- `df_v1.csv`: Statistiques individuelles des joueurs par saison (dataset issu de la partie 1)
-- `df_draft_combine_cleaned.csv`: Données physiques des joueurs (combine)
-- `df_game_summary_cleaned.csv`: Résultats des matchs
+### Datasets utilisés
+
+* `df_v1.csv` : Statistiques individuelles des joueurs par saison (issu de la Partie 1)
+* `df_draft_combine_cleaned.csv` : Données physiques des joueurs
+* `df_game_summary_cleaned.csv` : Résultats de matchs NBA
 
 Les données sont filtrées pour ne conserver que les saisons après 2000.
 
-## Feature engineering
+### Feature Engineering
 
-Le système calcule plusieurs métriques avancées pour chaque joueur:
+Le système calcule plusieurs métriques avancées pour chaque joueur :
 
-1. **Statistiques par match**:
-   - `pts_per_game`, `reb_per_game`, `ast_per_game`
+#### 1. Statistiques par match :
 
-2. **Métriques d'efficacité**:
-   - `efficiency` = `(pts + reb + ast) / gp`
-   - `scoring_efficiency` = `pts_per_game / usg_pct`
-   - `playmaking` = `ast_per_game * ast_pct`
-   - `ast_usg_ratio` = `ast_pct / usg_pct`
-   - `reb_pct_sum` = `oreb_pct + dreb_pct`
+* `pts_per_game`, `reb_per_game`, `ast_per_game`
 
-3. **Classification des positions**: Simplification en 3 catégories:
-   - **G**: Guard
-   - **F**: Forward
-   - **C**: Center
+#### 2. Métriques d'efficacité :
 
-## Modèle de prédiction
+* `efficiency` = `(pts + reb + ast) / gp`
+* `scoring_efficiency` = `pts_per_game / usg_pct`
+* `playmaking` = `ast_per_game * ast_pct`
+* `ast_usg_ratio` = `ast_pct / usg_pct`
+* `reb_pct_sum` = `oreb_pct + dreb_pct`
 
-Un modèle RandomForest est entraîné pour prédire le taux de victoire (`win_rate`) d'un lineup basé sur les statistiques agrégées des joueurs:
+#### 3. Classification des positions :
 
-1. Sélection des 8 features les plus corrélées avec `win_rate`
-2. Agrégation des statistiques des 5 meilleurs scoreurs de chaque équipe
-3. Entraînement d'un `RandomForestRegressor` (200 arbres, profondeur max 10)
+* `G` : Guard
+* `F` : Forward
+* `C` : Center
 
-## Système de sélection de lineup
+### Modèle de prédiction
 
-1. Sélection de 5 joueurs
-2. Extraction des statistiques individuelles et des données du combine
-3. Conservation des positions (G, F, C) pour analyse de cohérence
+Un modèle `RandomForestRegressor` est entraîné pour prédire le **taux de victoire (`win_rate`)** d’un lineup à partir des statistiques agrégées de ses joueurs.
 
-## Système de bonus de cohérence
+* Sélection des 8 features les plus corrélées avec `win_rate`
+* Agrégation des statistiques des 5 meilleurs scoreurs de chaque équipe
+* Entraînement du modèle : 200 arbres, profondeur maximale de 10
 
-Un bonus est appliqué au taux de victoire prédit selon la composition:
-- +15% pour lineup parfaite (2G, 2F, 1C)
-- +10% pour lineup avec les 3 positions
-- +5% pour lineup avec 2 positions
-- -5% pour lineup avec une seule position
+### Systèmes de sélection de lineup
 
-## Procédure de prédiction
+Deux méthodes sont disponibles :
 
-Pour comparer deux lineups aléatoires:
-1. Sélection de deux lineups avec `select_random_lineup()`
-2. Calcul des statistiques agrégées pour chaque lineup
-3. Prédiction du taux de victoire avec le modèle RandomForest
+1. `select_random_lineup()` : sélectionne aléatoirement 5 joueurs parmi tout l'historique NBA
+2. `select_team_lineup(team_name, season)` : sélectionne les 5 meilleurs joueurs (au scoring) d’une **équipe réelle** pour une saison donnée
+
+Dans les deux cas, les statistiques individuelles sont récupérées et les positions des joueurs sont utilisées pour évaluer la cohérence de la lineup.
+
+### Système de bonus de cohérence
+
+Un bonus est appliqué au taux de victoire prédit en fonction de la distribution des postes :
+
+* **+15%** pour une lineup idéale (2 Guards, 2 Forwards, 1 Center)
+* **+10%** pour une lineup avec les 3 positions représentées
+* **+5%** pour une lineup avec 2 types de positions
+* **−5%** pour une lineup composée d’un seul type de poste
+
+### Procédure de prédiction
+
+1. Sélection de deux lineups (aléatoires ou réelles)
+2. Calcul des statistiques agrégées
+3. Prédiction du `win_rate` via le modèle RandomForest
 4. Application du bonus de cohérence
 5. Comparaison des scores finaux
-6. Affichage détaillé des joueurs et statistiques du lineup gagnant
+6. Affichage détaillé des joueurs et du score du lineup gagnant
 
-Le système fournit une comparaison objective basée sur les statistiques avancées tout en valorisant la complémentarité des positions au sein d'une équipe.
+---
 
-
-
-## Modèles de machine learning utilisés
-Nous avons formulé le problème comme une classification binaire : prédire si une équipe gagne (1) ou perd (0) selon les statistiques de ses 5 joueurs.
-
-Nous avons sélectionné plusieurs modèles complémentaires, en tenant compte de la performance, de l’interprétabilité et du volume de données :
-
-1. RandomForestClassifier (modèle principal de départ)
-Un excellent choix pour les données tabulaires, même peu pré-traitées.
-
-✔️ Avantages :
-
-Robuste face au surapprentissage
-
-Pas besoin de normaliser les données
-
-Tolérant aux features corrélées
-
-Rapide à entraîner
-
-Permet d’interpréter les features importantes (e.g. net_rating, usg_pct, etc.)
-
-2. LogisticRegression (baseline simple et interprétable)
-Modèle linéaire pour valider la qualité du dataset.
-
-✔️ Avantages :
-
-Très rapide à entraîner
-
-Interprétation facile des poids (influence directe des variables)
-
-Bon point de départ pour valider la pertinence des features
-
-3. XGBoostClassifier (modèle avancé orienté performance)
-Un modèle de gradient boosting réputé pour sa précision.
-
-✔️ Avantages :
-
-Très performant sur petits et moyens datasets
-
-Gère bien les valeurs manquantes
-
-Paramétrage fin (early stopping, learning rate, etc.)
-
-Importance des features et gain à chaque split fournis
-
-4. MLPClassifier (réseau de neurones multi-couches)
-Un modèle non-linéaire qui peut apprendre des synergies complexes entre joueurs.
-
-✔️ Avantages :
-
-Capable de modéliser des interactions subtiles (e.g. “LeBron + Kyrie” ≠ “LeBron seul” + “Kyrie seul”)
-
-Potentiel élevé avec des données issues de plusieurs saisons
-
-Peut généraliser des patterns profonds non triviaux
+Cette architecture permet de comparer objectivement la performance de deux lineups selon les statistiques avancées, tout en valorisant la **complémentarité des postes** et la **logique collective d’une équipe réelle**.
